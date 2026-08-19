@@ -3,6 +3,7 @@ package com.example.catalog.controller;
 import com.example.catalog.dto.CursorPage;
 import com.example.catalog.dto.ProductRequest;
 import com.example.catalog.dto.ProductResponse;
+import com.example.catalog.dto.ProductListResponse;
 import com.example.catalog.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,7 +27,7 @@ public class ProductController {
 
     @Operation(summary = "List/search products with optional category and price-range filters (cursor-paginated)")
     @GetMapping
-    public ResponseEntity<CursorPage<ProductResponse>> list(
+    public ResponseEntity<CursorPage<ProductListResponse>> list(
             @Parameter(description = "Exact category match") @RequestParam(required = false) String category,
             @Parameter(description = "Inclusive minimum price") @RequestParam(required = false) BigDecimal minPrice,
             @Parameter(description = "Inclusive maximum price") @RequestParam(required = false) BigDecimal maxPrice,

@@ -3,7 +3,7 @@ package com.example.catalog.controller;
 import com.example.catalog.dto.CursorPage;
 import com.example.catalog.dto.ProductRequest;
 import com.example.catalog.dto.ProductResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.example.catalog.dto.ProductListResponse;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.MongoDBContainer;
@@ -49,9 +50,6 @@ class ProductControllerIntegrationTest {
 
     @Autowired
     TestRestTemplate rest;
-
-    @Autowired
-    ObjectMapper objectMapper;
 
     private String baseUrl() {
         return "http://localhost:" + port + "/api/v1/products";
@@ -139,12 +137,16 @@ class ProductControllerIntegrationTest {
         do {
             String url = baseUrl() + "?category=pagination-test&minPrice=15&maxPrice=30&limit=7"
                     + (cursor != null ? "&cursor=" + cursor : "");
-            ResponseEntity<CursorPage> resp = rest.getForEntity(url, CursorPage.class);
+                ResponseEntity<CursorPage<ProductListResponse>> resp = rest.exchange(
+                    url,
+                    HttpMethod.GET,
+                    null,
+                    new ParameterizedTypeReference<>() {
+                    });
             assertThat(resp.getStatusCode()).isEqualTo(HttpStatus.OK);
 
-            CursorPage<?> page = objectMapper.convertValue(resp.getBody(), CursorPage.class);
-            for (Object item : page.getItems()) {
-                ProductResponse pr = objectMapper.convertValue(item, ProductResponse.class);
+                CursorPage<ProductListResponse> page = resp.getBody();
+                for (ProductListResponse pr : page.getItems()) {
                 assertThat(seenIds.add(pr.getId())).as("no duplicate items across pages").isTrue();
                 assertThat(pr.getPrice()).isBetween(new BigDecimal("15"), new BigDecimal("30"));
             }

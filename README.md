@@ -99,7 +99,7 @@ exercise runnable with one command):
 | Index | Purpose |
 |---|---|
 | `{ sku: 1 }` unique | Enforce SKU uniqueness; fast SKU lookup |
-| `{ active: 1, category: 1, price: 1, _id: 1 }` | Primary listing index — serves "active products in category X, price between A and B, sorted by price" as an index-only range scan |
+| `{ active: 1, category: 1, price: 1, _id: 1 }` | Primary listing index — serves "active products in category X, price between A and B, sorted by price" as an indexed range scan |
 | `{ active: 1, price: 1, _id: 1 }` | Same, for listings without a category filter |
 
 The `_id` tail on both compound indexes exists specifically to support cursor pagination
@@ -125,7 +125,8 @@ classic `?page=3&size=20` offset pagination. Reasoning:
   progressively slower — the exact failure mode a read-heavy service can't afford.
 - Cursor pagination resumes exactly where the last page left off via an indexed range
   condition (`price > cursor.price OR (price == cursor.price AND _id > cursor.id)`), so
-  every page costs the same regardless of how deep the client is.
+  every page costs the same regardless of how deep the client is. Cursors are bound to
+  the category/price filters used to create them and expire after 15 minutes.
 - The trade-off is that clients can't jump straight to "page 47" or see a live total
   count cheaply. For a product catalog's primary UX (browse/scroll, infinite-scroll or
   "load more"), that's the right trade — and it's the same approach Stripe, GitHub, and
@@ -167,7 +168,7 @@ GET /api/v1/products?category=electronics&minPrice=20&maxPrice=100&limit=20
 
 ```json
 {
-  "items": [ { "id": "...", "sku": "...", "name": "...", "price": "29.99", "...": "..." } ],
+  "items": [ { "id": "...", "sku": "...", "name": "...", "category": "electronics", "price": "29.99", "currency": "USD", "active": true } ],
   "nextCursor": "MjkuOTl8NjZmMWY3...",
   "hasMore": true,
   "limit": 20

@@ -45,8 +45,8 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         // into the result set the client pages.
         if (cursor != null) {
             conditions.add(new Criteria().orOperator(
-                    Criteria.where("price").gt(cursor.price()),
-                    Criteria.where("price").is(cursor.price()).and("id").gt(cursor.id())
+                        Criteria.where("price").gt(cursor.price()),
+                        Criteria.where("price").is(cursor.price()).and("id").gt(cursor.id())
             ));
         }
 
@@ -55,6 +55,14 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         Query query = new Query(combined)
                 .with(Sort.by(Sort.Order.asc("price"), Sort.Order.asc("_id")))
                 .limit(limit);
+
+        query.fields()
+            .include("sku")
+            .include("name")
+            .include("category")
+            .include("price")
+            .include("currency")
+            .include("active");
 
         return mongoTemplate.find(query, Product.class);
     }

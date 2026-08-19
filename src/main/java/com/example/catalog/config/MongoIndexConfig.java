@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
  *
  * 3. { active: 1, price: 1, _id: 1 }
  *    - Supports "browse all categories, filter by price" without a category predicate,
- *      where index #2 would leave a lower-selectivity leading field partially unused.
+ *      where index #2 avoids scanning category ranges when no category predicate exists.
  *
  * With reads vastly outnumbering writes, we deliberately trade a bit of write-side index
  * maintenance cost for read speed -- exactly the right tradeoff for a browse-heavy catalog.

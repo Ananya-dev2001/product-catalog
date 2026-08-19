@@ -3,6 +3,8 @@ package com.example.catalog.service;
 import com.example.catalog.dto.CursorPage;
 import com.example.catalog.dto.ProductRequest;
 import com.example.catalog.dto.ProductResponse;
+import com.example.catalog.dto.ProductListResponse;
+import com.example.catalog.exception.InvalidCursorException;
 import com.example.catalog.exception.DuplicateSkuException;
 import com.example.catalog.exception.ProductNotFoundException;
 import com.example.catalog.model.Product;
@@ -106,7 +108,7 @@ class ProductServiceTest {
         when(productRepository.findPageByFilters(any(), any(), any(), any(), eq(2)))
                 .thenReturn(List.of(p1, p2));
 
-        CursorPage<ProductResponse> page = productService.list(null, null, null, null, 1);
+        CursorPage<ProductListResponse> page = productService.list(null, null, null, null, 1);
 
         assertThat(page.getItems()).hasSize(1);
         assertThat(page.isHasMore()).isTrue();
@@ -119,9 +121,39 @@ class ProductServiceTest {
         when(productRepository.findPageByFilters(any(), any(), any(), any(), eq(21)))
                 .thenReturn(List.of(p1));
 
-        CursorPage<ProductResponse> page = productService.list(null, null, null, null, null);
+        CursorPage<ProductListResponse> page = productService.list(null, null, null, null, null);
 
         assertThat(page.isHasMore()).isFalse();
         assertThat(page.getNextCursor()).isNull();
+    }
+
+    @Test
+    void update_preservesInactiveState_whenActiveIsOmitted() {
+        Product existing = Product.builder()
+                .id("p1")
+                .sku("SKU-1")
+                .name("Old name")
+                .category("electronics")
+                .price(new BigDecimal("10.00"))
+                .active(false)
+                .build();
+        when(productRepository.findById("p1")).thenReturn(Optional.of(existing));
+        when(productRepository.save(any(Product.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        ProductResponse response = productService.update("p1", validRequest);
+
+        assertThat(response.isActive()).isFalse();
+    }
+
+    @Test
+    void list_rejectsCursorForDifferentFilters() {
+        Product product = Product.builder().id("1").price(new BigDecimal("10.00")).build();
+        when(productRepository.findPageByFilters(any(), any(), any(), any(), eq(2)))
+                .thenReturn(List.of(product, product));
+
+        CursorPage<ProductListResponse> firstPage = productService.list("electronics", null, null, null, 1);
+
+        assertThatThrownBy(() -> productService.list("home", null, null, firstPage.getNextCursor(), 1))
+                .isInstanceOf(InvalidCursorException.class);
     }
 }
