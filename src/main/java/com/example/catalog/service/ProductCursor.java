@@ -19,7 +19,7 @@ public record ProductCursor(BigDecimal price, String id, String filterKey, Insta
                 encodePart(price.toPlainString()),
                 encodePart(id),
                 encodePart(filterKey),
-                expiresAt.toString());
+                encodePart(expiresAt.toString()));
         return Base64.getUrlEncoder().withoutPadding().encodeToString(raw.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -31,7 +31,7 @@ public record ProductCursor(BigDecimal price, String id, String filterKey, Insta
             BigDecimal price = new BigDecimal(decodePart(parts[0]));
             String id = decodePart(parts[1]);
             String filterKey = decodePart(parts[2]);
-            Instant expiresAt = Instant.parse(parts[3]);
+            Instant expiresAt = Instant.parse(decodePart(parts[3]));
             if (id.isBlank() || filterKey.isBlank()) throw new IllegalArgumentException("empty cursor field");
             return new ProductCursor(price, id, filterKey, expiresAt);
         } catch (Exception e) {
